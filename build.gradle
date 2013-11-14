@@ -1,0 +1,127 @@
+buildscript {
+	repositories {
+		maven { url 'http://repo.springsource.org/libs-release'}
+		maven { url 'http://repo.springsource.org/plugins-release' }
+	}
+}
+
+configure(allprojects) {
+	apply plugin: 'java'
+	apply plugin: 'eclipse'
+	apply plugin: 'idea'
+	
+	sourceCompatibility = 1.6
+	targetCompatibility = 1.6
+
+	group = 'org.springframework.data'
+	
+	[compileJava, compileTestJava]*.options*.compilerArgs = ['-Xlint:none']
+
+	repositories {
+		mavenCentral()
+		maven { url "http://repo.springsource.org/libs-release" }
+	}
+
+	task integrationTest(type: Test) {
+		include '**/*IntegrationTests.*'
+	}
+
+	test {
+		exclude '**/*IntegrationTests.*'
+	}
+    
+	// servlet-api (2.5) and tomcat-servlet-api (3.0) classpath entries should not be
+	// exported to dependent projects in Eclipse to avoid false compilation errors due
+	// to changing APIs across these versions
+	eclipse.classpath.file.whenMerged { classpath ->
+		classpath.entries.findAll { entry -> entry.path.contains('servlet-api') }*.exported = false
+	}
+}
+
+configure(subprojects) { subproject ->
+	apply from: "${rootProject.projectDir}/publish-maven.gradle"
+
+	jar {
+		manifest.attributes['Implementation-Title'] = subproject.name
+		manifest.attributes['Implementation-Version'] = subproject.version
+
+		from("${rootProject.projectDir}/src/dist") {
+			include "license.txt"
+			include "notice.txt"
+			into "META-INF"
+			expand(copyright: new Date().format('yyyy'), version: project.version)
+		}
+	}
+
+	javadoc {
+		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+		options.author = true
+		options.header = project.name
+	}
+
+	task sourcesJar(type: Jar, dependsOn:classes) {
+		classifier = 'sources'
+		from sourceSets.main.allJava
+	}
+
+	task javadocJar(type: Jar) {
+		classifier = 'javadoc'
+		from javadoc
+	}
+
+	artifacts {
+		archives sourcesJar
+		archives javadocJar
+	}
+}
+
+project('spring-data-grid-core') {
+	description = "Spring Data Grid Core"
+    
+	dependencies {
+		compile "org.springframework:spring-core:$springVersion"
+
+		testCompile "org.springframework:spring-test:$springVersion"
+		testCompile "org.hamcrest:hamcrest-core:$hamcrestVersion"
+		testCompile "org.hamcrest:hamcrest-library:$hamcrestVersion"		
+		testCompile "junit:junit:$junitVersion"
+	}
+}
+
+configure(rootProject) {
+	description = 'Spring Data Grid'
+
+	// don't publish the default jar for the root project
+	configurations.archives.artifacts.clear()
+
+	dependencies { // for integration tests
+	}
+    
+	task api(type: Javadoc) {
+		group = 'Documentation'
+		description = 'Generates aggregated Javadoc API documentation.'
+		title = "${rootProject.description} ${version} API"
+		options.memberLevel = org.gradle.external.javadoc.JavadocMemberLevel.PROTECTED
+		options.author = true
+		options.header = rootProject.description
+		options.overview = 'src/api/overview.html'
+		options.links(
+			'http://docs.jboss.org/jbossas/javadoc/4.0.5/connector'
+		)
+		source subprojects.collect { project ->
+			project.sourceSets.main.allJava
+		}
+		destinationDir = new File(buildDir, "api")
+		classpath = files(subprojects.collect { project ->
+			project.sourceSets.main.compileClasspath
+		})
+		maxMemory = '1024m'
+	}
+
+	task wrapper(type: Wrapper) {
+		description = 'Generates gradlew[.bat] scripts'
+		gradleVersion = '1.8'
+	}
+
+}
+

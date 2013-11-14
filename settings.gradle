@@ -1,0 +1,3 @@
+rootProject.name = 'spring-data-grid'
+
+include 'spring-data-grid-core'

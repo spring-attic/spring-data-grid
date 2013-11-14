@@ -1,4 +1,3 @@
-spring-data-grid
+Spring Data Grid
 ================
 
-Spring Data Grid
