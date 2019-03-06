@@ -34,12 +34,12 @@ def customizePom(pom, gradleProject) {
             url = 'https://github.com/spring-projects/spring-data-grid'
             organization {
                 name = 'SpringSource'
-                url = 'http://spring.io/spring-data-grid'
+                url = 'https://spring.io/spring-data-grid'
             }
             licenses {
                 license {
                     name 'The Apache Software License, Version 2.0'
-                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    url 'https://www.apache.org/licenses/LICENSE-2.0.txt'
                     distribution 'repo'
                 }
             }
